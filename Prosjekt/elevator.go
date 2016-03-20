@@ -1,4 +1,4 @@
-package elevator
+package driver
 
 import (
 	//"fmt"
@@ -28,7 +28,7 @@ const (
 	BUTTON_COMMAND   elev_button_type_t = 2
 )
 
-const (
+var (
 	lamp_channel_matrix = [N_FLOORS][N_BUTTONS]int{
 		[N_BUTTONS]int{LIGHT_UP1, LIGHT_DOWN1, LIGHT_COMMAND1},
 		[N_BUTTONS]int{LIGHT_UP2, LIGHT_DOWN2, LIGHT_COMMAND2},
@@ -44,20 +44,32 @@ const (
 )
 
 func ElevInit() bool {
-	if IoInit() == 0 {
-		errors.New("Error initializing elev_init..")
+
+	// Initiate hardware
+	if IoInit()==0 {
 		return false
 	}
-
+	// Zero all floor button lamps
 	for i := 0; i < N_FLOORS; i++ {
-		for b = 0; b < N_BUTTONS; b++ {
-			ElevSetButtonLamp(b, i, 0)
+		// Clearing all Call Down buttons
+		if i!=0 {
+			ElevSetButtonLamp(BUTTON_CALL_DOWN, i, 0)
 		}
-	}
 
+		// Clearing all Call UP buttons
+		if (i!= N_FLOORS -1) {
+			ElevSetButtonLamp(BUTTON_CALL_UP, i, 0)
+		}
+
+		ElevSetButtonLamp(BUTTON_COMMAND, i, 0)
+		
+	}
+	ElevSetDoorOpenLamp(0)
+    ElevSetFloorIndicator(0)
+    return true
 }
 
-func ElevSetMotorDirection(elev_motor_direction_t dirn) {
+func ElevSetMotorDirection(dirn elev_motor_direction_t) {
 	if dirn == 0 {
 		IoWriteAnalog(MOTOR, 0)
 	} else if dirn > 0 {
@@ -69,20 +81,20 @@ func ElevSetMotorDirection(elev_motor_direction_t dirn) {
 	}
 }
 
-func ElevSetButtonLamp(elev_button_type_t button, floor, value int) {
+func ElevSetButtonLamp(button elev_button_type_t, floor, value int) {
 	if floor < 0 || floor >= N_FLOORS {
 		errors.New("Floor is out of range.")
-	} else if button < 0 || button >= N_BUTTONS {
+	} else if int(button) < 0 || int(button) >= N_BUTTONS {
 		errors.New("Button is out of range")
-	} else if value {
+	} else if value==1 {
 		IoSetBit(lamp_channel_matrix[floor][button])
 	} else {
 		IoClearBit(lamp_channel_matrix[floor][button])
 	}
 }
 
-func ElevFloorIndicator(int floor) {
-	if floor < 0 || floor >= N_FLOORS {
+func ElevSetFloorIndicator(floor int) {
+	if (floor < 0) || (floor >= N_FLOORS) {
 		errors.New("Floor is out of range.")
 	}
 	switch floor {
@@ -101,42 +113,49 @@ func ElevFloorIndicator(int floor) {
 	}
 }
 
-func ElevSetDoorOpenLamp(int value) {
-	if value {
+func ElevSetDoorOpenLamp(value int) {
+	if value==1 {
 		IoSetBit(LIGHT_DOOR_OPEN)
 	} else {
 		IoClearBit(LIGHT_DOOR_OPEN)
 	}
 }
 
-func ElevSetStopLamp(int value) {
-	if value {
+func ElevSetStopLamp(value int) {
+	if value==1 {
 		IoSetBit(LIGHT_STOP)
 	} else {
 		IoClearBit(LIGHT_STOP)
 	}
 }
 
-func ElevGetButtonSignal(elev_button_type_t button, int floor) int {
-	if floor < 0 || floor >= N_FLOORS {
-		errors.New("Floor is out of range.")
-	} else if button < 0 || button >= N_BUTTONS {
-		errors.New("Button is out of range")
-	} else {
-		return IoReadBit(button_channel_matrix[floor][button])
+func ElevGetButtonSignal(button elev_button_type_t, floor int) int {
+	if IoReadBit(button_channel_matrix[floor][button]) == 1 {
+		return 1
+	}else{
+		return 0
 	}
 }
 
 func ElevGetFloorSensorSignal() int {
-	if IoReadBit(SENSOR_FLOOR1) {
+	if IoReadBit(SENSOR_FLOOR1)==1 {
 		return 0
-	} else if IoReadBit(SENSOR_FLOOR2) {
+	} else if IoReadBit(SENSOR_FLOOR2)==1 {
 		return 1
-	} else if IoReadBit(SENSOR_FLOOR3) {
+	} else if IoReadBit(SENSOR_FLOOR3)==1 {
 		return 2
-	} else if IoReadBit(SENSOR_FLOOR4) {
+	} else if IoReadBit(SENSOR_FLOOR4)==1 {
 		return 3
 	} else {
 		return -1
 	}
 }
+
+func ElevGetStopSignal() int {
+	if IoReadBit(STOP) == 1{
+		return 1
+	}else{
+		return 0
+	}
+}
+

@@ -1,0 +1,15 @@
+sette opp heis til kjøring:
+
+1. Last ned alle filene og legg de i ei mappe i home
+2. i terminal. 	GOPATH=$HOME/minmappe - slik at den finner alle packages
+		PATH=$HOME/minmappe/bin:$PATH - da kan du bruke bare navnet på den kjørbare filen
+3. bruker go build for å sjekke syntax og kode for feil
+4. bruker go install for å kompilere 
+
+Husk å legge til i import i main når nye packages skal legges til
+
+
+States til heis:
+-idle
+-kjører
+-dør åpen
