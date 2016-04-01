@@ -1,4 +1,4 @@
-package elevator
+package driver
 
 /*
 #cgo CFLAGS: -std=c11

@@ -2,22 +2,38 @@ package main
 
 import (
 	"fmt"
+	"elevator"
+	//"time"
 )
 
 func main() {
-	elevator.ElevInit()
+	fmt.Println("Hellluuuuu!")
+
+	driver.ElevInit()
 	fmt.Println("Press STOP button to stop elevator and exit program\n")
-	elevator.ElevSetMotorDirection(1)
+	driver.ElevSetMotorDirection(1)
 
 	for {
-		if elevator.ElevGetFloorSensorSignal() == 3 {
-			elevator.ElevSetMotorDirection(-1)
-		} else if elevator.ElevGetFloorSensorSignal() == 0 {
-			elevator.ElevSetMotorDirection(1)
+		if driver.ElevGetFloorSensorSignal() == 3 {
+			
+			driver.ElevSetMotorDirection(0)
+			driver.ElevSetStopLamp(1)
+			driver.ElevSetDoorOpenLamp(1)
+			
+			driver.ElevSetMotorDirection(-1)
+			driver.ElevSetStopLamp(0)
+			driver.ElevSetDoorOpenLamp(0)
+		} else if driver.ElevGetFloorSensorSignal() == 0 {
+			driver.ElevSetMotorDirection(0)
+			driver.ElevSetStopLamp(1)
+			
+			driver.ElevSetMotorDirection(1)
+			driver.ElevSetStopLamp(0)
 		}
 
-		if elevator.ElevGetStopSignal() {
-			elevator.ElevSetMotorDirection(0)
+		if driver.ElevGetStopSignal() == 1 {
+			driver.ElevSetMotorDirection(0)
 		}
 	}
+
 }
