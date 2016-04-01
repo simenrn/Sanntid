@@ -1,8 +1,9 @@
-package driver
+package elevator
 
 import (
 	//"fmt"
 	"errors"
+	"time"
 )
 
 const MOTOR_SPEED int = 2800
@@ -46,27 +47,39 @@ var (
 func ElevInit() bool {
 
 	// Initiate hardware
-	if IoInit()==0 {
+	if IoInit() == 0 {
 		return false
 	}
 	// Zero all floor button lamps
 	for i := 0; i < N_FLOORS; i++ {
 		// Clearing all Call Down buttons
-		if i!=0 {
+		if i != 0 {
 			ElevSetButtonLamp(BUTTON_CALL_DOWN, i, 0)
 		}
 
 		// Clearing all Call UP buttons
-		if (i!= N_FLOORS -1) {
+		if i != N_FLOORS-1 {
 			ElevSetButtonLamp(BUTTON_CALL_UP, i, 0)
 		}
 
 		ElevSetButtonLamp(BUTTON_COMMAND, i, 0)
-		
+
 	}
 	ElevSetDoorOpenLamp(0)
-    ElevSetFloorIndicator(0)
-    return true
+	ElevSetFloorIndicator(0)
+	if ElevGetFloorSensorSignal() != 0 {
+		ElevSetMotorDirection(DIRN_DOWN)
+		for {
+			if ElevGetFloorSensorSignal() != -1 {
+				ElevSetMotorDirection(DIRN_UP)
+				time.Sleep(10 * time.Millisecond)
+				ElevSetMotorDirection(DIRN_STOP)
+
+				break
+			}
+		}
+	}
+	return true
 }
 
 func ElevSetMotorDirection(dirn elev_motor_direction_t) {
@@ -86,7 +99,7 @@ func ElevSetButtonLamp(button elev_button_type_t, floor, value int) {
 		errors.New("Floor is out of range.")
 	} else if int(button) < 0 || int(button) >= N_BUTTONS {
 		errors.New("Button is out of range")
-	} else if value==1 {
+	} else if value == 1 {
 		IoSetBit(lamp_channel_matrix[floor][button])
 	} else {
 		IoClearBit(lamp_channel_matrix[floor][button])
@@ -114,7 +127,7 @@ func ElevSetFloorIndicator(floor int) {
 }
 
 func ElevSetDoorOpenLamp(value int) {
-	if value==1 {
+	if value == 1 {
 		IoSetBit(LIGHT_DOOR_OPEN)
 	} else {
 		IoClearBit(LIGHT_DOOR_OPEN)
@@ -122,7 +135,7 @@ func ElevSetDoorOpenLamp(value int) {
 }
 
 func ElevSetStopLamp(value int) {
-	if value==1 {
+	if value == 1 {
 		IoSetBit(LIGHT_STOP)
 	} else {
 		IoClearBit(LIGHT_STOP)
@@ -132,19 +145,19 @@ func ElevSetStopLamp(value int) {
 func ElevGetButtonSignal(button elev_button_type_t, floor int) int {
 	if IoReadBit(button_channel_matrix[floor][button]) == 1 {
 		return 1
-	}else{
+	} else {
 		return 0
 	}
 }
 
 func ElevGetFloorSensorSignal() int {
-	if IoReadBit(SENSOR_FLOOR1)==1 {
+	if IoReadBit(SENSOR_FLOOR1) == 1 {
 		return 0
-	} else if IoReadBit(SENSOR_FLOOR2)==1 {
+	} else if IoReadBit(SENSOR_FLOOR2) == 1 {
 		return 1
-	} else if IoReadBit(SENSOR_FLOOR3)==1 {
+	} else if IoReadBit(SENSOR_FLOOR3) == 1 {
 		return 2
-	} else if IoReadBit(SENSOR_FLOOR4)==1 {
+	} else if IoReadBit(SENSOR_FLOOR4) == 1 {
 		return 3
 	} else {
 		return -1
@@ -152,10 +165,19 @@ func ElevGetFloorSensorSignal() int {
 }
 
 func ElevGetStopSignal() int {
-	if IoReadBit(STOP) == 1{
+	if IoReadBit(STOP) == 1 {
 		return 1
-	}else{
+	} else {
 		return 0
 	}
 }
 
+func ElevStopAtFloor(floor int) {
+	ElevSetMotorDirection(0)
+	ElevSetButtonLamp(BUTTON_CALL_UP, floor, 0)
+	ElevSetButtonLamp(BUTTON_CALL_DOWN, floor, 0)
+	ElevSetButtonLamp(BUTTON_COMMAND, floor, 0)
+	ElevSetDoorOpenLamp(1)
+	time.Sleep(3)
+	ElevSetDoorOpenLamp(0)
+}
