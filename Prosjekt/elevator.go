@@ -2,6 +2,7 @@ package elevator
 
 import (
 	//"fmt"
+	. ".././driver"
 	"errors"
 	"time"
 )
@@ -43,6 +44,13 @@ var (
 		[N_BUTTONS]int{BUTTON_UP4, BUTTON_DOWN4, BUTTON_COMMAND4},
 	}
 )
+
+var Internal_orders [N_FLOORS]int
+var External_orders [N_FLOORS][2]int
+var NewOrder bool
+var NewExternalOrder bool
+Que := make([]int)
+
 
 func ElevInit() bool {
 
@@ -178,6 +186,72 @@ func ElevStopAtFloor(floor int) {
 	ElevSetButtonLamp(BUTTON_CALL_DOWN, floor, 0)
 	ElevSetButtonLamp(BUTTON_COMMAND, floor, 0)
 	ElevSetDoorOpenLamp(1)
+	Internal_orders[floor] = 0
+	External_orders[floor][0] = 0
+	External_orders[floor][1] = 0
 	time.Sleep(3)
 	ElevSetDoorOpenLamp(0)
+}
+
+func GetInternalOrders() {
+	for i := 0; i < N_FLOORS; i++ {
+		if ElevGetButtonSignal(2, i) == 1 {
+			Internal_orders[i] = 1
+			NewInternalOrder = true
+		}
+	}
+}
+
+func GetExternalOrders() {
+	for i := 0; i < N_FLOORS; i++ {
+		if ElevGetButtonSignal(0, i) == 1 {
+			External_orders[i][0] = 1
+			NewExternalOrder = true
+		}
+		if ElevGetButtonSignal(1, i) == 1 {
+			External_orders[i][1] = 1
+			NewExternalOrder = true
+		}
+	}
+}
+
+func GetOrders() {
+	for {
+		GetInternalOrders()
+		GetExternalOrders()
+	}
+}
+
+func ElevLights() {
+	for {
+		if ElevGetFloorSensorSignal() != -1{
+			ElevSetFloorIndicator(ElevGetFloorSensorSignal())
+		}
+		for floor := 0; floor <N_FLOORS; floor++ {
+			if Internal_orders[floor] == 1 {
+				ElevSetButtonLamp(2,floor,1)
+			} else if Internal_orders[floor] == 0 {
+				ElevSetButtonLamp(2,floor,0)
+			}
+			if External_orders[floor][0] == 1 {
+				ElevSetButtonLamp(0,floor,1)
+			} else if External_orders[floor][0] == 0 {
+				ElevSetButtonLamp(0,floor,0)
+			}
+			if External_orders[floor][1] == 1 {
+				ElevSetButtonLamp(1,floor,1)
+			} else if External_orders[floor][1] == 0 {
+				ElevSetButtonLamp(1,floor,0)
+			}
+		}
+	}
+}
+
+func ExecuteOrder(target_floor int) {
+	current_floor = ElevGetFloorSensorSignal()
+
+}
+
+func QueSort() {
+	
 }

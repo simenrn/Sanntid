@@ -1,39 +1,39 @@
 package main
 
 import (
-	"elevator"
+	. "./elev"
 	"fmt"
-	"statemachine"
+	"time"
+	//. "./statemachine"
 	//"time"
 )
+
+
 
 func main() {
 	fmt.Println("Hellluuuuu!")
 
-	elevator.ElevInit()
+	ElevInit()
 	fmt.Println("Press STOP button to stop elevator and exit program\n")
-	elevator.ElevSetMotorDirection(1)
-
+	ElevSetMotorDirection(1)
+	go GetOrders()
+	go ElevLights()
 	for {
-		if elevator.ElevGetFloorSensorSignal() == 3 {
+		fmt.Println("Jeg er her modder")
+		fmt.Println(Internal_orders)
+		fmt.Println(External_orders)
+		time.Sleep(time.Second *3)
+		if ElevGetFloorSensorSignal() == 3 {
+			ElevSetMotorDirection(-1)
+			ElevSetDoorOpenLamp(1)
+		} else if ElevGetFloorSensorSignal() == 0 {
 
-			elevator.ElevSetMotorDirection(0)
-			elevator.ElevSetStopLamp(1)
-			elevator.ElevSetDoorOpenLamp(1)
+			ElevSetMotorDirection(1)
 
-			elevator.ElevSetMotorDirection(-1)
-			elevator.ElevSetStopLamp(0)
-			elevator.ElevSetDoorOpenLamp(0)
-		} else if elevator.ElevGetFloorSensorSignal() == 0 {
-			elevator.ElevSetMotorDirection(0)
-			elevator.ElevSetStopLamp(1)
-
-			elevator.ElevSetMotorDirection(1)
-			elevator.ElevSetStopLamp(0)
 		}
 
-		if elevator.ElevGetStopSignal() == 1 {
-			elevator.ElevSetMotorDirection(0)
+		if ElevGetStopSignal() == 1 {
+			ElevSetMotorDirection(0)
 		}
 	}
 }

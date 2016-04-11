@@ -2,7 +2,7 @@ package statemachine
 
 import (
 	"fmt"
-	"src/elevator"
+	. ".././elevator"
 )
 
 type state int
@@ -13,25 +13,35 @@ const (
 	DOOR_OPEN = 2
 )
 
+var DestinationFloor int
+
 func EventManager() {
 
 	state = IDLE
+	for {
+		switch state {
+		case IDLE:
+			fmt.Println("State: Idle")
+			if NewInternalOrder = true {
+				for i:= 0; i<N_FLOORS; i++{
+					if Internal_orders[i] == 1{
+						DestinationFloor = i
+						state = MOVING
+						break
+					}
 
-	switch state {
-	case IDLE:
-		fmt.Println("State: Idle")
+				}
+			} // Legg til for eksterne ordre
 
-	case MOVING:
-		fmt.Println("State: Moving")
-		elevator.ElevetMotorDirection(dirn)
-		for elevator.ElevGetFloorSensorSignal() != floor {
+		case MOVING:
+			fmt.Println("State: Moving")
+			ExecuteOrder(DestinationFloor)
+			state = DOOR_OPEN
+
+		case DOOR_OPEN:
+			fmt.Println("State: Door open")
+			ElevStopAtFloor(DestinationFloor)
+			state = IDLE
 		}
-		state = DOOR_OPEN
-
-	case DOOR_OPEN:
-		fmt.Println("State: Door open")
-		elevator.ElevStopAtFloor(floor)
-		state = IDLE
-
 	}
 }

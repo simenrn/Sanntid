@@ -1,8 +1,10 @@
 sette opp heis til kjøring:
 
 1. Last ned alle filene og legg de i ei mappe i home
-2. i terminal. 	GOPATH=$HOME/minmappe - slik at den finner alle packages
-		PATH=$HOME/minmappe/bin:$PATH - da kan du bruke bare navnet på den kjørbare filen
+2. i terminal.
+	export GOPATH=$HOME/minmappe - slik at den finner alle packages
+	export PATH=$HOME/minmappe/bin:$PATH - da kan du bruke bare navnet på den kjørbare filen
+	export GOBIN=$GOPATH/bin - slik at den legger intallerte filer i bin mappa
 3. bruker go build for å sjekke syntax og kode for feil
 4. bruker go install for å kompilere 
 
