@@ -45,12 +45,21 @@ var (
 	}
 )
 
+//var NewInternalOrder bool
+//var NewExternalOrder bool
 var Internal_orders [N_FLOORS]int
 var External_orders [N_FLOORS][2]int
-var NewOrder bool
-var NewExternalOrder bool
-Que := make([]int)
+var direction int
 
+var Que_Local []int
+
+/*
+func QueInit(){
+	Que_Local := make([]int,5)
+}*/
+
+var Current_Floor int
+//var Previous_Floor int
 
 func ElevInit() bool {
 
@@ -189,28 +198,77 @@ func ElevStopAtFloor(floor int) {
 	Internal_orders[floor] = 0
 	External_orders[floor][0] = 0
 	External_orders[floor][1] = 0
+	if len(Que_Local) > 1 {
+		temp := Que_Local[1:len(Que_Local)-1]
+		copy(Que_Local, temp)
+	} else {
+		temp2 := make([]int,0)
+		copy(Que_Local, temp2)
+	}
 	time.Sleep(3)
 	ElevSetDoorOpenLamp(0)
 }
 
 func GetInternalOrders() {
+	var AllreadyInQue = false
 	for i := 0; i < N_FLOORS; i++ {
 		if ElevGetButtonSignal(2, i) == 1 {
 			Internal_orders[i] = 1
-			NewInternalOrder = true
+			if len(Que_Local)>0{
+				for j := 0; j < len(Que_Local); j++ {
+					if Que_Local[j] == i {
+						AllreadyInQue = true
+						break
+					}
+				}
+				if !AllreadyInQue{
+				Que_Local = append(Que_Local, i)
+				}
+			} else {
+				Que_Local = append(Que_Local, i)
+			}
+			//NewInternalOrder = true
 		}
 	}
 }
 
+
 func GetExternalOrders() {
+	var AllreadyInQue = false
 	for i := 0; i < N_FLOORS; i++ {
 		if ElevGetButtonSignal(0, i) == 1 {
 			External_orders[i][0] = 1
-			NewExternalOrder = true
+			if len(Que_Local)>0{
+				for j := 0; j < len(Que_Local); j++ {
+					if Que_Local[j] == i {
+						AllreadyInQue = true
+						break
+					}
+				}
+				if !AllreadyInQue{
+				Que_Local = append(Que_Local, i)
+				}
+			} else {
+				Que_Local = append(Que_Local, i)
+			}
+			//NewExternalOrder = true
 		}
 		if ElevGetButtonSignal(1, i) == 1 {
 			External_orders[i][1] = 1
-			NewExternalOrder = true
+			if len(Que_Local)>0{
+				for j := 0; j < len(Que_Local); j++ {
+					if Que_Local[j] == i {
+						AllreadyInQue = true
+						break
+					}
+				}
+				if !AllreadyInQue{
+				Que_Local = append(Que_Local, i)
+				}
+			} else {
+				Que_Local = append(Que_Local, i)
+			}
+			//NewExternalOrder = true	
 		}
 	}
 }
@@ -226,6 +284,7 @@ func ElevLights() {
 	for {
 		if ElevGetFloorSensorSignal() != -1{
 			ElevSetFloorIndicator(ElevGetFloorSensorSignal())
+			Current_Floor = ElevGetFloorSensorSignal()
 		}
 		for floor := 0; floor <N_FLOORS; floor++ {
 			if Internal_orders[floor] == 1 {
@@ -247,11 +306,49 @@ func ElevLights() {
 	}
 }
 
-func ExecuteOrder(target_floor int) {
-	current_floor = ElevGetFloorSensorSignal()
+func ExecuteOrder() {
+	for Que_Local[0] != Current_Floor {
+		if  Que_Local[0] < Current_Floor{
+			ElevSetMotorDirection(1)
+			direction = 1
 
-}
-
-func QueSort() {
-	
+		} else {
+			ElevSetMotorDirection(-1)
+			direction = -1
+		}
+		for i := 1; i<len(Que_Local); i++{
+			if Que_Local[0] > Que_Local[i] && Que_Local[i] > Current_Floor && direction == 1{
+				temp := Que_Local[0]
+				Que_Local[0] = Que_Local[i]
+				if i == 1{
+					Que_Local[i] = temp
+				} else if i == 2{
+					temp2 := Que_Local[1]
+					Que_Local[1] = temp
+					Que_Local[2] = temp2
+				} else {
+					temp3 := Que_Local[2]
+					Que_Local[2] = Que_Local[1]
+					Que_Local[1] = temp
+					Que_Local[3] = temp3
+				}
+			}
+			if Que_Local[0] < Que_Local[i] && Que_Local[i] < Current_Floor && direction == -1{
+				temp := Que_Local[0]
+				Que_Local[0] = Que_Local[i]
+				if i == 1{
+					Que_Local[i] = temp
+				} else if i == 2{
+					temp2 := Que_Local[1]
+					Que_Local[1] = temp
+					Que_Local[2] = temp2
+				} else {
+					temp3 := Que_Local[2]
+					Que_Local[2] = Que_Local[1]
+					Que_Local[1] = temp
+					Que_Local[3] = temp3
+				}
+			}
+		}
+	}
 }
