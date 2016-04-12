@@ -1,47 +1,41 @@
 package statemachine
 
 import (
+	. ".././elev"
 	"fmt"
-	. ".././elevator"
 )
 
-type state int
+/*type state int
 
 const (
 	IDLE      = 0
 	MOVING    = 1
 	DOOR_OPEN = 2
-)
+)*/
 
-var DestinationFloor int
+var state string
 
 func EventManager() {
-
-	state = IDLE
+	fmt.Println("se det")
+	state = "IDLE"
 	for {
 		switch state {
-		case IDLE:
-			fmt.Println("State: Idle")
-			if NewInternalOrder = true {
-				for i:= 0; i<N_FLOORS; i++{
-					if Internal_orders[i] == 1{
-						DestinationFloor = i
-						state = MOVING
-						break
-					}
+		case "IDLE":
+			//fmt.Println("State: Idle")
+			if len(Que_Local) != 0 {
+				state = "MOVING"
+			}
+			// Legg til for eksterne ordre
 
-				}
-			} // Legg til for eksterne ordre
+		case "MOVING":
+			//fmt.Println("State: Moving")
+			ExecuteOrder()
+			state = "DOOR_OPEN"
 
-		case MOVING:
-			fmt.Println("State: Moving")
-			ExecuteOrder(DestinationFloor)
-			state = DOOR_OPEN
-
-		case DOOR_OPEN:
+		case "DOOR_OPEN":
 			fmt.Println("State: Door open")
-			ElevStopAtFloor(DestinationFloor)
-			state = IDLE
+			ElevStopAtFloor(Current_Floor)
+			state = "IDLE"
 		}
 	}
 }
