@@ -2,67 +2,11 @@ package elevator
 
 import (
 	. ".././driver"
+	. ".././definitions"
 	"errors"
 	"fmt"
 	"time"
 )
-
-const (
-	MOTOR_SPEED int = 2800
-
-	N_FLOORS  int = 4
-	N_BUTTONS int = 3
-
-	DIRN_DOWN int = -1
-	DIRN_STOP int = 0
-	DIRN_UP   int = 1
-
-	NOTHING int = 5
-
-	BUTTON_CALL_UP   int = 0
-	BUTTON_CALL_DOWN int = 1
-	BUTTON_COMMAND   int = 2
-
-	IDLE      int = 0
-	MOVING    int = 1
-	DOOR_OPEN int = 2
-
-	ADD_ORDER    int = 0
-	REMOVE_ORDER int = 1
-
-	ON  int = 1
-	OFF int = 0
-)
-
-var (
-	lamp_channel_matrix = [N_FLOORS][N_BUTTONS]int{
-		[N_BUTTONS]int{LIGHT_UP1, LIGHT_DOWN1, LIGHT_COMMAND1},
-		[N_BUTTONS]int{LIGHT_UP2, LIGHT_DOWN2, LIGHT_COMMAND2},
-		[N_BUTTONS]int{LIGHT_UP3, LIGHT_DOWN3, LIGHT_COMMAND3},
-		[N_BUTTONS]int{LIGHT_UP4, LIGHT_DOWN4, LIGHT_COMMAND4},
-	}
-	button_channel_matrix = [N_FLOORS][N_BUTTONS]int{
-		[N_BUTTONS]int{BUTTON_UP1, BUTTON_DOWN1, BUTTON_COMMAND1},
-		[N_BUTTONS]int{BUTTON_UP2, BUTTON_DOWN2, BUTTON_COMMAND2},
-		[N_BUTTONS]int{BUTTON_UP3, BUTTON_DOWN3, BUTTON_COMMAND3},
-		[N_BUTTONS]int{BUTTON_UP4, BUTTON_DOWN4, BUTTON_COMMAND4},
-	}
-)
-
-var Current_Floor int
-
-type MSG struct {
-	State           int
-	Dirn            int
-	PrevFloor       int
-	PrevDirn        int
-	MessageType     int
-	Que_Local       [N_FLOORS]int
-	Que_Global_Up   [N_FLOORS]int
-	Que_Global_Down [N_FLOORS]int
-}
-
-var Msg = MSG{}
 
 func ElevInit() bool {
 
@@ -121,9 +65,9 @@ func ElevSetButtonLamp(button int, floor, value int) {
 	} else if int(button) < 0 || int(button) >= N_BUTTONS {
 		errors.New("Button is out of range")
 	} else if value == 1 {
-		IoSetBit(lamp_channel_matrix[floor][button])
+		IoSetBit(Lamp_channel_matrix[floor][button])
 	} else {
-		IoClearBit(lamp_channel_matrix[floor][button])
+		IoClearBit(Lamp_channel_matrix[floor][button])
 	}
 }
 
@@ -164,7 +108,7 @@ func ElevSetStopLamp(value int) {
 }
 
 func ElevGetButtonSignal(button int, floor int) int {
-	if IoReadBit(button_channel_matrix[floor][button]) == 1 {
+	if IoReadBit(Button_channel_matrix[floor][button]) == 1 {
 		return 1
 	} else {
 		return 0
@@ -193,17 +137,19 @@ func ElevGetStopSignal() int {
 	}
 }
 
-func ElevStopAtFloor(floor int) {
-	ElevSetMotorDirection(0)
-	ElevSetButtonLamp(BUTTON_CALL_UP, floor, 0)
-	ElevSetButtonLamp(BUTTON_CALL_DOWN, floor, 0)
-	ElevSetButtonLamp(BUTTON_COMMAND, floor, 0)
-	ElevSetDoorOpenLamp(1)
-	Msg.Que_Local[floor] = 0
-	Msg.Que_Global_Down[floor] = 0
-	Msg.Que_Global_Up[floor] = 0
+func ElevStopAtFloor(floor int, orderEventChannel chan int) {
+	ElevSetMotorDirection(OFF)
+	ElevSetButtonLamp(BUTTON_CALL_UP, floor, OFF)
+	ElevSetButtonLamp(BUTTON_CALL_DOWN, floor, OFF)
+	ElevSetButtonLamp(BUTTON_COMMAND, floor, OFF)
+	ElevSetDoorOpenLamp(ON)
+	Msg.Que_Local[floor] = OFF
+	Msg.Que_Global_Down[floor] = OFF
+	Msg.Que_Global_Up[floor] = OFF
+	Msg.MessageType = REMOVE_ORDER
+	orderEventChannel <- ON
 	time.Sleep(time.Second * 3)
-	ElevSetDoorOpenLamp(0)
+	ElevSetDoorOpenLamp(OFF)
 }
 
 func GetInternalOrders() {
@@ -214,21 +160,29 @@ func GetInternalOrders() {
 	}
 }
 
-func GetExternalOrders() {
+func GetExternalOrders(orderEventChannel chan int) {
 	for floor := 0; floor < N_FLOORS; floor++ {
-		if ElevGetButtonSignal(BUTTON_CALL_UP, floor) == 1 {
-			Msg.Que_Global_Up[floor] = 1
+		if Msg.Que_Global_Up[floor] == OFF{
+			if ElevGetButtonSignal(BUTTON_CALL_UP, floor) == 1 {
+				Msg.Que_Global_Up[floor] = 1
+				Msg.MessageType = ADD_ORDER
+				orderEventChannel<-ON
+			}
 		}
-		if ElevGetButtonSignal(BUTTON_CALL_DOWN, floor) == 1 {
-			Msg.Que_Global_Down[floor] = 1
+		if Msg.Que_Global_Down[floor] == OFF{
+			if ElevGetButtonSignal(BUTTON_CALL_DOWN, floor) == 1 {
+				Msg.Que_Global_Down[floor] = 1
+				Msg.MessageType = ADD_ORDER
+				orderEventChannel<-ON
+			}	
 		}
 	}
 }
 
-func GetOrders() {
+func GetOrders(orderEventChannel chan int) {
 	for {
 		GetInternalOrders()
-		GetExternalOrders()
+		GetExternalOrders(orderEventChannel)
 	}
 }
 
@@ -291,7 +245,7 @@ func FloorReached() int {
 					return DOOR_OPEN
 				}
 				if Msg.Que_Local[Msg.PrevFloor] == 0 && Msg.Que_Global_Down[Msg.PrevFloor] == 0 && Msg.Que_Global_Up[Msg.PrevFloor] == 1 {
-					if Msg.PrevFloor == 0 {
+					if Msg.PrevFloor != 0 {
 						for floor := Msg.PrevFloor - 1; floor >= 0; floor-- {
 							if Msg.Que_Local[floor] == 1 || Msg.Que_Global_Down[floor] == 1 {
 								return MOVING
@@ -323,19 +277,19 @@ func ZeroOrders() bool {
 }
 
 func NextDirection() int {
-	if Msg.Que_Local[Msg.PrevFloor] == 1 || Msg.Que_Global_Up[Msg.PrevFloor] == 1 || Msg.Que_Global_Down[Msg.PrevFloor] == 1 {
+	if Msg.Que_Local[Msg.PrevFloor] == ON || Msg.Que_Global_Up[Msg.PrevFloor] == ON || Msg.Que_Global_Down[Msg.PrevFloor] == ON {
 		return DIRN_STOP
 	} else if ZeroOrders() == false {
 		if Msg.PrevDirn == DIRN_UP {
 			for i := Msg.PrevFloor; i < N_FLOORS; i++ {
-				if Msg.Que_Local[i] == 1 || Msg.Que_Global_Up[i] == 1 || Msg.Que_Global_Down[i] == 1 {
+				if Msg.Que_Local[i] == ON || Msg.Que_Global_Up[i] == ON || Msg.Que_Global_Down[i] == ON {
 					return DIRN_UP
 				}
 			}
 			return DIRN_DOWN
 		} else if Msg.PrevDirn == DIRN_DOWN {
 			for i := Msg.PrevFloor; i >= 0; i-- {
-				if Msg.Que_Local[i] == 1 || Msg.Que_Global_Up[i] == 1 || Msg.Que_Global_Down[i] == 1 {
+				if Msg.Que_Local[i] == ON || Msg.Que_Global_Up[i] == ON || Msg.Que_Global_Down[i] == ON {
 					return DIRN_DOWN
 				}
 			}
@@ -345,3 +299,27 @@ func NextDirection() int {
 		return NOTHING
 	}
 }
+
+func UpdateOrder(otherLift MSG) {
+	switch otherLift.MessageType{
+		case ADD_ORDER:
+			for floor := 0; floor<N_FLOORS; floor++{
+				if otherLift.Que_Global_Up[floor] == ON{
+					Msg.Que_Global_Up[floor] = ON
+				}
+				if otherLift.Que_Global_Down[floor] == ON{
+					Msg.Que_Global_Down[floor] = ON
+				}
+			}
+		case REMOVE_ORDER:
+			for floor := 0; floor<N_FLOORS; floor++{
+				if otherLift.Que_Global_Up[floor] == OFF{
+					Msg.Que_Global_Up[floor] = OFF
+				}
+				if otherLift.Que_Global_Down[floor] == OFF{
+					Msg.Que_Global_Down[floor] = OFF
+				}
+			}
+	}
+}
+
