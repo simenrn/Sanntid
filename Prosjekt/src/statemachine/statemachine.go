@@ -2,10 +2,11 @@ package statemachine
 
 import (
 	. ".././elev"
+	. ".././definitions"
 	"fmt"
 )
 
-func EventManager() {
+func StateMachine(orderEventChannel chan int) {
 	fmt.Println("Welcome to the eventmanager")
 	Msg.State = IDLE
 	for {
@@ -24,7 +25,7 @@ func EventManager() {
 
 		case DOOR_OPEN:
 			//fmt.Println("State: Door open")
-			ElevStopAtFloor(Msg.PrevFloor)
+			ElevStopAtFloor(Msg.PrevFloor, orderEventChannel)
 			Msg.State = IDLE
 		}
 	}
