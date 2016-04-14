@@ -1,7 +1,7 @@
 package json
 
 import (
-	. "def"
+	. ".././definitions"
 	"encoding/json"
 	"fmt"
 )
