@@ -6,12 +6,17 @@ sette opp heis til kjøring:
 	export PATH=$HOME/minmappe/bin:$PATH - da kan du bruke bare navnet på den kjørbare filen
 	export GOBIN=$GOPATH/bin - slik at den legger intallerte filer i bin mappa
 3. bruker go build for å sjekke syntax og kode for feil
-4. bruker go install for å kompilere 
+4. bruker go install for å kompilere
 
-Husk å legge til i import i main når nye packages skal legges til
+for å sende filene til remote pc og koble til:
 
+1. chmod +x ./start_extern_elevator.sh
+2. ./start_extern_elevator.sh
+3. ssh student$129.241.187.#
 
-States til heis:
--idle
--kjører
--dør åpen
+TODO:
+- Lage en funksjon fikser hvem som tar hva av ordre
+- Timer til ImAlive signal
+- Fikse hva som skal skje når nettverkskabelen kobles ut fra en heis
+- Finne en måte å lagre ip-ene og ordrene til de heisene som kjører sammen, slik at hvis en heis
+  detter ut så kan de andre oppdage dette og evt ta den ordren som den skulle ha
