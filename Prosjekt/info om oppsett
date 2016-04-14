@@ -20,3 +20,5 @@ TODO:
 - Fikse hva som skal skje når nettverkskabelen kobles ut fra en heis
 - Finne en måte å lagre ip-ene og ordrene til de heisene som kjører sammen, slik at hvis en heis
   detter ut så kan de andre oppdage dette og evt ta den ordren som den skulle ha
+- Fikse sånn at en heis aldri kan kjøre forbi ende etasjene, selv om den ordren de skulle ta
+  ble fjernet av en eller annen grunn
