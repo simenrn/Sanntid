@@ -1,32 +1,33 @@
 package statemachine
 
 import (
-	. ".././elev"
 	. ".././definitions"
+	. ".././elev"
 	"fmt"
 )
 
 func StateMachine(orderEventChannel chan int) {
 	fmt.Println("Welcome to the eventmanager")
-	Msg.State = IDLE
+	ElevatorList[0].State = IDLE
 	for {
-		switch Msg.State {
+		switch ElevatorList[0].State {
 		case IDLE:
+
 			//fmt.Println("State: Idle")
 			if NextDirection() != NOTHING {
-				Msg.Dirn = NextDirection()
-				Msg.State = MOVING
+				ElevatorList[0].Dirn = NextDirection()
+				ElevatorList[0].State = MOVING
 			}
 
 		case MOVING:
 			//fmt.Println("State: Moving")
-			ElevSetMotorDirection(Msg.Dirn)
-			Msg.State = FloorReached()
+			ElevSetMotorDirection(ElevatorList[0].Dirn)
+			ElevatorList[0].State = FloorReached()
 
 		case DOOR_OPEN:
 			//fmt.Println("State: Door open")
-			ElevStopAtFloor(Msg.PrevFloor, orderEventChannel)
-			Msg.State = IDLE
+			ElevStopAtFloor(ElevatorList[0].PrevFloor, orderEventChannel)
+			ElevatorList[0].State = IDLE
 		}
 	}
 }
