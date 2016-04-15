@@ -2,9 +2,7 @@ package definitions
 
 import (
 	. ".././driver"
-	. ".././udp"
 )
-
 
 var (
 	Lamp_channel_matrix = [N_FLOORS][N_BUTTONS]int{
@@ -37,7 +35,8 @@ const (
 
 	ADD_ORDER    int = 0
 	REMOVE_ORDER int = 1
-	NOTHING int = 5
+	LOST_ORDERS  int = 2
+	NOTHING      int = 5
 
 	BUTTON_CALL_UP   int = 0
 	BUTTON_CALL_DOWN int = 1
@@ -48,25 +47,41 @@ const (
 )
 
 type MSG struct {
+	MyIP            []byte
 	State           int
 	Dirn            int
 	PrevFloor       int
 	PrevDirn        int
+	ReadyToGoUp     int
+	ReadyToGoDown   int
 	MessageType     int
+	FirstMsg        bool
+	IsActive        bool
 	Que_Local       [N_FLOORS]int
 	Que_Global_Up   [N_FLOORS]int
 	Que_Global_Down [N_FLOORS]int
 }
 
 var Msg = MSG{}
+
+var ElevatorList = []MSG{}
+
+var OtherLift_1 = MSG{}
+var OtherLift_2 = MSG{}
+
+type Udp_message struct {
+	Raddr  string //if receiving raddr=senders address, if sending raddr should be set to "broadcast" or an ip:port
+	Data   []byte //TODO: implement another encoding, strings are meh
+	Length int    //length of received data, in #bytes // N/A for sending
+}
+
 var buff = make([]byte, 1024)
 var Udp_Msg = Udp_message{"broadcast", buff, 1024}
 
 var Current_Floor int
 
 const (
-	LOCAL_LISTEN_PORT		int = 20267
-	BROADCAST_LISTEN_PORT	int = 30267
-	MESSAGE_SIZE	 		int = 1024
+	LOCAL_LISTEN_PORT     int = 20267
+	BROADCAST_LISTEN_PORT int = 30267
+	MESSAGE_SIZE          int = 1024
 )
-
